@@ -1,0 +1,37 @@
+from pyshp import shapefile
+import json
+import pandas
+import re
+import sys
+import itertools
+import numpy as ppool
+from shapely.geometry import MultiPolygon, Polygon
+
+savePathImports = 'file path'
+fileName = ('name.json')
+closeFile = open(savePathImports + fileName, mode='w')
+
+#read shapefile and convert geometry to GeoJSON, polygons grouped
+with shapefile.Reader('file path') as shp:
+    geojson_data = shp.__geo_interface__
+    
+BeatFID, BeatName, BeatCode, District, Coordinates = [],[],[],[],[]
+
+for source in geojson_data['features']:
+    if source['geometry'] is not None:
+        for p in source['geometry']['coordinates']:
+            BeatFID.append(source['properties']['FID'])
+            BeatName.append(source['properties']['Beat_name'])
+            BeatCode.append(source['properties']['Beat'])
+            District.append(source['properties']['District'])
+            cstr = (re.sub(r',([^,]*(?:,|$))', r'\1', str(p)))
+            Coordinates.append(re.sub(r'([()[\]])', r'', cstr)) 
+
+shpdf = pandas.DataFrame([BeatFID, BeatName, BeatCode, District, Coordinates])
+shpdf.index = pandas.Index(['FID', 'BeatName', 'BeatCode', 'District', 'Coordinates'])
+shpdf = shpdf.transpose()
+
+shpdf.to_json(savePathImports + fileName, orient='records')
+closeFile.close()
+
+sys.exit()
